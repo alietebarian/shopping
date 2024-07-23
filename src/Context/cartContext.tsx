@@ -1,46 +1,76 @@
 import { createContext, useEffect, useState } from "react";
-import { products } from "../Components/Products.type";
+import { Product } from "../Components/Products.types";
 
-type cartContextProviderProps = {
+type CartContextProviderProps = {
   children: React.ReactNode;
 };
 
-type cartContextType = {
+type CartContextType = {
   UserCart: Product[];
   addProduct: (id: number) => void;
-  removedProduct: (id: number) => void;
-  removeAllProduct: () => void;
-  shop: products[];
+  removeProduct: (id: number) => void;
+  removeAll: () => void;
+  shop: Product[];
 };
 
-export const cartContext = createContext({} as cartContextType);
+export const CartContext = createContext({} as CartContextType);
 
-const cartContextProvider = ({ children }: cartContextProviderProps) => {
-  const [UserCart, setUserCart] = useState<products[]>([]);
-  const [shop, setSop] = useState<products[]>([]);
-
-  const addProduct = (id: number) => {};
-  const removedProduct = (id: number) => {};
-  const removeAllProduct = () => {};
+const CartContextProvider = ({ children }: CartContextProviderProps) => {
+  const [UserCart, setUserCart] = useState<Product[]>([]);
+  const [shop, setShop] = useState<Product[]>([]);
 
   useEffect(() => {
-    fetch("https://fakestoreapi.com/products").then((response) => response.json()).then(data => console.log(data);
-    )
-},[])
+    (async () => {
+      const res = await fetch("https://fakestoreapi.com/products");
+      const data = (await res.json()) as Product[];
+      setShop(data);
+    })();
+  }, []);
+
+  const addProduct = (id: number) => {
+    setUserCart((prevProducts) => {
+      const mainProductInCart = UserCart.find((product) => product.id === id);
+
+      if (mainProductInCart) {
+        return prevProducts.map((product) => {
+          if (product.id === id) {
+            return { ...product, count: product.count + 1 };
+          } else {
+            return product;
+          }
+        });
+      } else {
+        const mainProductInShop = shop.find(
+          (product) => product.id === id
+        ) as Product;
+        return [...prevProducts, { ...mainProductInShop, count: 1 }];
+      }
+
+      return [];
+    });
+  };
+
+  const removeProduct = (id: number) => {
+    setUserCart((prevProducts) =>
+      prevProducts.filter((product) => product.id !== id)
+    );
+  };
+
+  const removeAll = () => setUserCart([]);
 
   return (
-    <cartContext.Provider
+    <CartContext.Provider
       value={{
         addProduct,
-        removedProduct,
-        removeAllProduct,
+        removeProduct,
+        removeAll,
         shop,
         UserCart,
       }}
     >
       {children}
-    </cartContext.Provider>
+    </CartContext.Provider>
   );
 };
 
-export default cartContextProvider;
+export default CartContextProvider;
